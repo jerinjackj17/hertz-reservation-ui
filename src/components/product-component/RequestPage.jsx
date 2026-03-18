@@ -8,11 +8,9 @@ function RequestPage() {
 
   const navigate = useNavigate();
 
-  // Loading + error state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Submit eligibility form
   const handleSubmit = async (data) => {
     try {
       setLoading(true);
@@ -20,8 +18,14 @@ function RequestPage() {
 
       const result = await fetchEligibleProducts(data);
 
-      // Navigate to response page with products
-      navigate("/response", { state: { products: result } });
+      // pass products + customer name and email to response page
+      navigate("/response", {
+        state: {
+          products: result,
+          customerName: data.name,
+          customerEmail: data.email
+        }
+      });
 
     } catch {
       setError("Failed to fetch eligible vehicles.");
@@ -31,26 +35,31 @@ function RequestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-premium-page py-20 px-6">
+    <div className="min-h-screen bg-premium-page py-14 px-6">
 
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-3xl mx-auto">
 
-        {/* Page Title */}
-        <h1 className="text-4xl md:text-5xl text-center font-light mb-12 text-premium-textPrimary">
-          Hertz Reservation — Vehicle Eligibility
-        </h1>
+        {/* page title — smaller and tighter */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-semibold text-premium-textPrimary">
+            Vehicle Eligibility Check
+          </h1>
+          <p className="text-sm text-premium-textSecondary mt-1">
+            Hertz Reservation System
+          </p>
+        </div>
 
-        {/* Error Banner */}
+        {/* error banner */}
         {error && (
-          <div className="bg-red-900/30 border border-red-600 text-red-400 px-6 py-4 rounded-lg mb-8">
+          <div className="bg-red-900/30 border border-red-600 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
             {error}
           </div>
         )}
 
-        {/* Spinner */}
+        {/* spinner */}
         {loading && <Spinner />}
 
-        {/* Eligibility Form */}
+        {/* eligibility form */}
         <EligibleForm onSubmit={handleSubmit} loading={loading} />
 
       </div>

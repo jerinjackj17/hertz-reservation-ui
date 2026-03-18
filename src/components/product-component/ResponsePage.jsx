@@ -6,8 +6,10 @@ function ResponsePage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Get products passed from RequestPage
+  // pull everything RequestPage put in navigation state
   const products = location.state?.products || [];
+  const customerName = location.state?.customerName || "";
+  const customerEmail = location.state?.customerEmail || "";
 
   return (
     <div className="min-h-screen bg-premium-page py-20 px-6">
@@ -30,8 +32,12 @@ function ResponsePage() {
 
         </div>
 
-        {/* Products Table */}
-        <ProductsTable products={products} />
+        {/* pass customer info down so ProductsTable can use it on Reserve */}
+        <ProductsTable
+          products={products}
+          customerName={customerName}
+          customerEmail={customerEmail}
+        />
 
       </div>
 
