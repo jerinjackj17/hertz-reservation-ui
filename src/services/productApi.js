@@ -22,8 +22,18 @@ export async function fetchEligibleProducts(data) {
   return response.json();
 }
 
-// called when customer clicks Reserve on a product row
+// called when customer confirms reservation on a product row
 export async function reserveProduct(data) {
+
+  // readable local timestamp e.g. "2026-03-18 14:32:05"
+  const now = new Date();
+  const eventTime = now.getFullYear() + "-"
+    + String(now.getMonth() + 1).padStart(2, "0") + "-"
+    + String(now.getDate()).padStart(2, "0") + " "
+    + String(now.getHours()).padStart(2, "0") + ":"
+    + String(now.getMinutes()).padStart(2, "0") + ":"
+    + String(now.getSeconds()).padStart(2, "0");
+
   const response = await fetch(
     `${KAFKA_URL}/events/vehicle`,
     {
@@ -44,7 +54,8 @@ export async function reserveProduct(data) {
         vehicleDuration: data.duration,
         vehiclePrice: data.price,
         validFrom: data.validFrom,
-        validTo: data.validTo
+        validTo: data.validTo,
+        eventTime: eventTime  // readable local timestamp
       }),
     }
   );
@@ -53,5 +64,6 @@ export async function reserveProduct(data) {
     throw new Error("Reservation failed");
   }
 
-  return response.json();
+  // backend returns plain text not JSON — use text() not json()
+  return response.text();
 }

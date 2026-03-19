@@ -9,10 +9,13 @@ function ProductsTable({ products, customerName, customerEmail }) {
   // track success/error message after reservation attempt
   const [message, setMessage] = useState(null);
 
+  // holds the product selected for confirmation modal
+  const [confirmProduct, setConfirmProduct] = useState(null);
+
   // do not render if products is null
   if (!products) return null;
 
-  // empty state — this is also where VEHICLE_NOT_AVAILABLE event fires from backend
+  // empty state
   if (products.length === 0) {
     return (
       <div className="bg-premium-card border border-premium-border rounded-xl p-6 text-premium-textSecondary">
@@ -21,9 +24,19 @@ function ProductsTable({ products, customerName, customerEmail }) {
     );
   }
 
-  const handleReserve = async (product) => {
-    setReservingId(product.productId);
+  // called when user clicks Reserve — opens confirmation modal
+  const handleReserveClick = (product) => {
+    setConfirmProduct(product);
     setMessage(null);
+  };
+
+  // called when user confirms in the modal — fires the kafka event
+  const handleConfirm = async () => {
+    const product = confirmProduct;
+
+    // close modal first
+    setConfirmProduct(null);
+    setReservingId(product.productId);
 
     try {
       // send product details + customer info to kafka event service
@@ -41,12 +54,11 @@ function ProductsTable({ products, customerName, customerEmail }) {
         validTo: product.validTo
       });
 
-      setMessage({ type: "success", text: "Reservation request sent! Check your email." });
+      setMessage({ type: "success", text: "Reservation confirmed! Check your email." });
 
     } catch {
       setMessage({ type: "error", text: "Reservation failed. Please try again." });
     } finally {
-      // clear loading state for this row
       setReservingId(null);
     }
   };
@@ -54,12 +66,12 @@ function ProductsTable({ products, customerName, customerEmail }) {
   return (
     <div className="bg-premium-card border border-premium-border rounded-xl shadow-sm overflow-x-auto">
 
-      {/* show success or error after reserve click */}
+      {/* success or error message after reservation */}
       {message && (
         <div className={`mx-6 mt-6 px-4 py-3 rounded-md text-sm ${
           message.type === "success"
-            ? "bg-green-50 border border-green-200 text-green-700"
-            : "bg-red-50 border border-red-200 text-red-700"
+            ? "bg-green-900/30 border border-green-600 text-green-400"
+            : "bg-red-900/30 border border-red-600 text-red-400"
         }`}>
           {message.text}
         </div>
@@ -79,7 +91,7 @@ function ProductsTable({ products, customerName, customerEmail }) {
               "Price",
               "Valid From",
               "Valid To",
-              "Action"  // new column for reserve button
+              "Action"
             ].map((header) => (
               <th key={header} className="px-6 py-4 text-left">
                 {header}
@@ -130,10 +142,10 @@ function ProductsTable({ products, customerName, customerEmail }) {
                 {product.validTo}
               </td>
 
-              {/* Reserve button — triggers VEHICLE_RESERVATION_EVENT via kafka */}
+              {/* Reserve button — opens confirmation modal */}
               <td className="px-6 py-4">
                 <button
-                  onClick={() => handleReserve(product)}
+                  onClick={() => handleReserveClick(product)}
                   disabled={reservingId === product.productId}
                   className="px-4 py-2 bg-premium-accent hover:bg-premium-accentHover disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs rounded-md transition"
                 >
@@ -146,6 +158,73 @@ function ProductsTable({ products, customerName, customerEmail }) {
         </tbody>
 
       </table>
+
+      {/* confirmation modal — shows when customer clicks Reserve */}
+      {confirmProduct && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+
+          <div className="bg-premium-card border border-premium-border rounded-xl p-8 w-full max-w-md shadow-xl">
+
+            {/* modal title */}
+            <h3 className="text-lg font-semibold text-premium-textPrimary mb-1">
+              Confirm Reservation
+            </h3>
+            <p className="text-xs text-premium-textSecondary mb-6">
+              Please review the vehicle details before confirming
+            </p>
+
+            {/* vehicle details inside modal */}
+            <div className="space-y-2 mb-6">
+
+              {/* each row shows field + value */}
+              {[
+                ["Category", confirmProduct.category],
+                ["Size", confirmProduct.size],
+                ["Type", confirmProduct.type],
+                ["Drive Type", confirmProduct.driveType],
+                ["Duration", confirmProduct.duration],
+                ["Price", `$${confirmProduct.price}`],
+                ["Valid From", confirmProduct.validFrom],
+                ["Valid To", confirmProduct.validTo],
+              ].map(([label, value]) => (
+                <div key={label} className="flex justify-between text-sm border-b border-premium-border pb-2">
+                  <span className="text-premium-textSecondary">{label}</span>
+                  <span className="text-premium-textPrimary font-medium">{value}</span>
+                </div>
+              ))}
+
+            </div>
+
+            {/* reserving for customer */}
+            <p className="text-xs text-premium-textSecondary mb-6">
+              Reserving for <span className="text-premium-textPrimary">{customerName}</span> — confirmation will be sent to <span className="text-premium-textPrimary">{customerEmail}</span>
+            </p>
+
+            {/* action buttons */}
+            <div className="flex gap-3">
+
+              {/* cancel closes modal without doing anything */}
+              <button
+                onClick={() => setConfirmProduct(null)}
+                className="flex-1 px-4 py-2 border border-premium-border rounded-md text-sm text-premium-textSecondary hover:text-premium-textPrimary transition"
+              >
+                Cancel
+              </button>
+
+              {/* confirm fires the kafka event */}
+              <button
+                onClick={handleConfirm}
+                className="flex-1 px-4 py-2 bg-premium-accent hover:bg-premium-accentHover text-white text-sm rounded-md transition"
+              >
+                Confirm Reservation
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
 
     </div>
   );
